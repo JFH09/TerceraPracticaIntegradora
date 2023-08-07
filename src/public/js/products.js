@@ -16,6 +16,7 @@ let userNameLogeado = document.getElementById("userName").innerHTML;
 let userEmailLogeado = document.getElementById("userEmail").innerHTML;
 let userIdLogeado = document.getElementById("userId").innerHTML;
 let cartIdLogeado = document.getElementById("cardId").innerHTML;
+let userRol = document.getElementById("rolToChange");
 let infoUsuario = "";
 window.addEventListener("load", async (event) => {
   console.log("cargooo la pagina....");
@@ -29,6 +30,14 @@ window.addEventListener("load", async (event) => {
     //   `Iniciaste sesión como: ${userNameLogeado}`,
     //   "success"
     // );
+    console.log("Rol usuario; ", userRol.innerHTML);
+    if (userRol.innerHTML == "Premium") {
+      console.log("el usuario es Premium cambiando a ususario....");
+      userRol.innerHTML = "Usuario";
+    } else if (userRol.innerHTML == "Usuario") {
+      console.log("el usuario es usuaeio cambiando a Premium...");
+      userRol.innerHTML = "Premium";
+    }
   } else {
     console.log("no hay un usuario logeado");
     await Swal.fire("No hay usuario logeado!!!", "", "info");
@@ -83,6 +92,11 @@ socket.on("getListaProductos", async (data) => {
 
 socket.on("fin", (data) => {
   console.log("entro a fin...");
+});
+
+socket.on("getInfoUser", () => {
+  console.log("recargando info user...");
+  window.location.reload();
 });
 
 async function getProducts() {
@@ -155,6 +169,8 @@ async function getProducts() {
                 <div class="">
                     <p class="card-text">Thumbnail: ${producto.thumbnail} </p>   
                 </div>
+                <br>
+                <small> <p>Creado por Usuario: <b>${producto.owner}</b></p></small>
 
             </div>
             <div class="col-md-8">
@@ -335,7 +351,7 @@ async function agregarProducto() {
     if (data.status == "error") {
       Swal.fire(
         "No se pudo agregar el producto!!!",
-        "No estas autorizado, cambia a premium/Admin para poder hacerlo",
+        "No estas autorizado, cambia a de ROL para poder realizar esta acción",
         "info"
       );
     } else {
@@ -350,7 +366,9 @@ async function agregarProducto() {
 async function eliminarProducto(idEliminar) {
   // console.log("id a eliminar - ", idEliminar);
   let data = "";
-  await fetch(currentUrl + `/${idEliminar}`, {
+  let urlAux = currentUrl.split("/api");
+
+  await fetch(urlAux[0] + `/api/products/${idEliminar}`, {
     method: "DELETE",
     // headers: {
     //   "Content-Type": "application/json",
@@ -370,7 +388,7 @@ async function eliminarProducto(idEliminar) {
   } else {
     Swal.fire(
       "No se pudo eliminar el producto!!!",
-      "No estas autorizado, cambia a premium/Admin para poder hacerlo",
+      "No estas autorizado, cambia a de ROL para poder realizar esta acción",
       "info"
     );
   }
@@ -464,7 +482,7 @@ async function editarProducto(productId) {
     if (dataRes.status == "error") {
       Swal.fire(
         "No se pudo agregar el producto!!!",
-        "No estas autorizado, cambia a premium/Admin para poder hacerlo",
+        "No estas autorizado, cambia a de ROL para poder realizar esta acción",
         "info"
       );
     } else {
@@ -581,7 +599,7 @@ async function addToCart(idProduct, product) {
     if (!isNaN(idCart[1])) {
       Swal.fire(
         "No se pudo agregar el producto!!!",
-        "No estas autorizado, cambia a premium/Admin para poder hacerlo",
+        "No estas autorizado, cambia a de ROL para poder realizar esta acción",
         "info"
       );
     } else {
@@ -601,10 +619,11 @@ async function addToCart(idProduct, product) {
           dataRes = result;
         });
 
-      if (dataRes.status == "error") {
+      if (dataRes.status.toUpperCase() == "ERROR") {
         await Swal.fire(
           "No se pudo agregar el producto!!!",
-          "No estas autorizado, cambia a premium/Admin para poder hacerlo",
+          "No estas autorizado, cambia a de ROL para poder realizar esta acción - " +
+            `${dataRes.result}`,
           "info"
         );
       } else {
@@ -635,6 +654,7 @@ function goToChat() {
 async function create100Products() {
   let data = "";
   let urlAux = currentUrl.split("/api");
+  Swal.fire("Creando 100 productos, espera un momento!", "", "success");
   await fetch(urlAux[0] + "/api/mockingproducts", {
     method: "GET",
     //body: JSON.stringify(obj),
@@ -654,10 +674,45 @@ async function create100Products() {
     });
 
   //console.log("resultado cerrar sesion-> ", data);
-  await Swal.fire("Se crearon los usuarios con exito...", "", "success");
+  await Swal.fire("Se crearon los productos con exito...", "", "success");
+  socket.emit("productoAgregado");
 }
 
 function gotoTestLogger() {
   let url = currentUrl.split("/api");
   window.location.replace(url[0] + "/api/loggerTest");
+}
+
+async function changeRol() {
+  Swal.fire(
+    "Cambiando rol!",
+    "Tu perfil se cambiara a " + userRol.innerHTML,
+    "success"
+  );
+  let urlAux = currentUrl.split("/api");
+  let rolChange = {
+    rol: userRol.innerHTML,
+  };
+  console.log(userIdLogeado);
+  let data;
+  await fetch(urlAux[0] + `/api/sessions/premium/${userIdLogeado}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(rolChange),
+  })
+    .then((response) => response.json())
+    .then((result) => {
+      console.log(result);
+      data = result;
+    });
+
+  console.log(data);
+  if (data.status == "success") {
+    await Swal.fire("Tu rol se actualizo satisfactoriamente!", "", "success");
+    socket.emit("rolActualizado");
+  } else {
+    await Swal.fire("No se pudo cambiar el rol!", "", "warning");
+  }
 }

@@ -85,6 +85,11 @@ io.on("connection", (socket) => {
     io.emit("getListaProductos");
   });
 
+  socket.on("rolActualizado", () => {
+    console.log("entro a rol actualizado- > ");
+    io.emit("getInfoUser");
+  });
+
   socket.on("productoEditado", (product) => {
     console.log("entro a editado  ");
     io.emit("getListaProductos");

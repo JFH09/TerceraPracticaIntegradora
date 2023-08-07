@@ -27,13 +27,13 @@ router.get(
 
 router.post(
   "/",
-  politicaAutorizacion(["ADMINISTRADOR"]),
+  politicaAutorizacion(["ADMINISTRADOR", "PREMIUM"]),
   productsController.addNewProduct
 );
 
 router.put(
   "/:id",
-  politicaAutorizacion(["ADMINISTRADOR"]),
+  politicaAutorizacion(["ADMINISTRADOR", "PREMIUM"]),
   productsController.updateProductById
 );
 
@@ -45,7 +45,7 @@ router.put(
 //solo puede eliminar un administrador...
 router.delete(
   "/:id",
-  politicaAutorizacion(["ADMINISTRADOR"]),
+  politicaAutorizacion(["ADMINISTRADOR", "PREMIUM"]),
   productsController.deleteProductById
 );
 

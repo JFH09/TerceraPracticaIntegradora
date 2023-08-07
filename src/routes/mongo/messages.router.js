@@ -16,13 +16,13 @@ router.get(
 
 router.post(
   "/",
-  politicaAutorizacion(["USUARIO", "USER_PREMIUM"]),
+  politicaAutorizacion(["USUARIO", "PREMIUM"]),
   messagesController.addNewChat
 );
 
 router.get(
   "/messages",
-  politicaAutorizacion(["USUARIO", "USER_PREMIUM"]),
+  politicaAutorizacion(["USUARIO", "PREMIUM"]),
   messagesController.getMessages
 );
 

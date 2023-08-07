@@ -9,7 +9,7 @@ export const createHash = (password) =>
 export const isValidPassword = (user, password) =>
   bcrypt.compareSync(password, user.password);
 
-export const generateProduct = () => {
+export const generateProduct = (ownerInfo) => {
   console.log("entro a generateProduct12");
   const randomNumber = faker.number.int({ min: 100, max: 9999 });
   const randomNumProduct = faker.number.int({ min: 1, max: 9999 });
@@ -21,6 +21,7 @@ export const generateProduct = () => {
     thumbnail: `rutaCode#${randomNumber}.png`,
     code: "code#" + randomNumber,
     stock: faker.number.int(randomNumProduct),
+    owner: ownerInfo,
   };
 };
 

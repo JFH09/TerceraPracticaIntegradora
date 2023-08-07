@@ -71,4 +71,27 @@ export default class User {
       return "no se pudo obtener la información ";
     }
   };
+
+  changeRol = async (req) => {
+    let { id } = req.params;
+    let { newRol } = req.body;
+    console.log(req.body);
+    console.log(req.params);
+    console.log("id usuario = ", id);
+    let idUsuario = id.split(" ");
+    console.log("ROL ACTUAL DE USER -> ", req.session.user.rol);
+    try {
+      //let idUser = JSON.stringify(req.user._id);
+      //console.log(idUser);
+      //let id = "";
+      //id = idUser.split('"');
+      console.log(idUsuario);
+      let user = await userModel.findById(idUsuario[1]);
+      console.log("informacion usuario a actualizar ", user);
+      return user;
+    } catch (error) {
+      console.log("no se pudo realizar la operacion ");
+      return "no se pudo realizar la accion";
+    }
+  };
 }

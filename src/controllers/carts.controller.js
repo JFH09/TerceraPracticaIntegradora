@@ -1,4 +1,5 @@
 import { cartModel } from "../dao/models/cart.model.js";
+import productModel from "../dao/models/product.model.js";
 import ticketModel from "../dao/models/ticket.model.js";
 import ticketCodeModel from "../dao/models/ticketCode.model.js";
 import { v4 as uuidv4 } from "uuid";
@@ -257,29 +258,48 @@ const addIdProductToCart = async (req, res) => {
 
       // console.log("LINE 385 Quantity quedo en :", quantity);
       // console.log("Posicion Producto", posicionProducto);
-      if (existe) {
-        //cart.products[]
-        // console.log("actualizando producto en la posicion ", posicionProducto);
-        // console.log(cart.products[posicionProducto].quantity);
-        req.logger.info("agregando producto que existe en el carrito");
-        cart.products[posicionProducto].quantity = quantity;
-        // console.log(cart.products[posicionProducto]);
+      let user = req.session.user;
+      console.log("user obtenido 262", user);
+      console.log("trayendo info del idProduct -  ", idProduct);
+      let productInfo = await productModel.findById({ _id: idProduct });
+      let estado;
+      let result;
+      console.log("obteniendo usu para EDITAR prodct 265", user);
+      console.log("obteniendo producto para editar 266", productInfo);
+      let ownerProduct = productInfo.owner;
+      let owner = ownerProduct.split(" ");
+      //|| user.rol.toUpperCase() != "PREMIUM"
+      if (user.id != owner[1]) {
+        if (existe) {
+          //cart.products[]
+          // console.log("actualizando producto en la posicion ", posicionProducto);
+          // console.log(cart.products[posicionProducto].quantity);
+          req.logger.info("agregando producto que existe en el carrito");
+          cart.products[posicionProducto].quantity = quantity;
+          // console.log(cart.products[posicionProducto]);
+        } else {
+          req.logger.info("agregando producto que no existe en el carrito");
+          cart.products.push({ product: idProduct, quantity: quantity });
+        }
+        req.logger.info("Actualizando carrito!!!");
+        result = await cartModel.updateOne({ _id: idCart }, cart);
+        estado = "success";
+        // res.json({ status: "success", result: result });
       } else {
-        req.logger.info("agregando producto que no existe en el carrito");
-        cart.products.push({ product: idProduct, quantity: quantity });
+        req.logger.info("No puede realizar esta accion!!!");
+        result = "No puede realizar esta accion ";
+        estado = "error";
       }
-
-      let result = await cartModel.updateOne({ _id: idCart }, cart);
-
-      res.json({ status: "success", result: result });
+      res.json({ status: estado, result: result });
     } else {
       res.json({ status: "Error", result: "El carrito puede que no exista 1" });
     }
+    // res.json({ status: estado, result: result });
   } catch (err) {
-    req.logger.error("El carrito puede que no exista");
+    req.logger.error("No se pudo realizar la acción");
     res.json({
       status: "Error",
-      result: "El carrito puede que no exista 2",
+      result: "No se pudo realizar la acción",
       err,
     });
   }
@@ -372,17 +392,26 @@ const deleteAllProductCart = async (req, res) => {
   try {
     let carrito = await cartModel.find({ _id: idCart });
     let producto = await cartModel.find({ _id: idProduct });
-
+    console.log("idProducto entra a cartsController 375", idProduct);
     if (carrito && producto) {
       let cart = carrito[0];
-      console.log("*****501", cart);
+      console.log("*****378", cart);
       console.log(carrito);
       console.log(carrito[0].products);
       let existe = false;
       let posicionProducto = "";
       cart.products.forEach((elemento) => {
-        console.log("en foreach 507", elemento._id);
-        if (elemento._id == idProduct) {
+        let idElement = JSON.stringify(elemento._id);
+        let elementIdSeparated = idElement.split('"');
+
+        console.log(
+          "comparando ids -> ",
+          elementIdSeparated[1],
+          " -IDPRODUCT ",
+          idProduct
+        );
+        console.log("en foreach 384", elemento._id);
+        if (elementIdSeparated[1] == idProduct) {
           //verificar tambien el code
           console.log("el producto existe en el carrito...");
           console.log(elemento.quantity - 1);
@@ -398,7 +427,7 @@ const deleteAllProductCart = async (req, res) => {
           posicionProducto = cart.products.indexOf(elemento);
           console.log("pos Product .> ", posicionProducto);
         } else {
-          console.log("el producto NO  existe en el carrito...");
+          console.log("el producto NO  existe en el carrito... 401");
         }
       });
 
@@ -444,9 +473,8 @@ const getViewPurchase = async (req, res) => {
   let userEmail = req.session.user.email;
 
   try {
-    let ticket = await ticketModel
-      .findOne({ purchaser: userEmail })
-      .populate("code");
+    let ticket = await ticketModel.findOne({ purchaser: userEmail });
+    //.populate("code");
 
     console.log(userEmail, ticket);
 

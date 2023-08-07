@@ -80,6 +80,42 @@ const logoutSession = (req, res) => {
   });
 };
 
+const changeRol = async (req, res) => {
+  req.logger.info("buscando info usuario...!!!!!!");
+  let { id } = req.params;
+  console.log("body ", req.body);
+  let { rol } = req.body;
+  console.log("87 newRol", rol);
+  let user = await userServiceDAO.changeRol(req);
+  // if (result.status != "error") {
+  if (user) {
+    console.log(user.rol);
+    console.log(typeof user.rol);
+    user.rol = rol;
+    console.log("usuario actualizado rol quedo => ", user);
+    let idUsuario = id.split(" ");
+
+    let result = await userModel.updateOne({ _id: idUsuario[1] }, user);
+    console.log(result);
+    req.session.user.rol = rol;
+    // return { status: "success", payload: req.user };
+    // } else {
+    //   return "no se pudo realizar la accion";
+    // }
+
+    res.status(201).json({
+      status: "success",
+      message: "se Actializo el rol satisfactoriamente",
+    });
+  } else {
+    // res.send(401).json({
+    //   status: "error",
+    //   error: "no se pudo obtener la informacion del usuario",
+    // });
+    console.log("error al actualizar rol");
+  }
+};
+
 export default {
   gitHub,
   githubcallback,
@@ -87,4 +123,5 @@ export default {
   login,
   getInfoUserById,
   logoutSession,
+  changeRol,
 };

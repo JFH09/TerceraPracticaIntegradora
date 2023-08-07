@@ -95,7 +95,7 @@ btnRegistrarme.addEventListener("click", (e) => {
 async function goToChangePass() {
   let email = document.getElementById("inputEmail").value;
   let enviarEmailLink = false;
-
+  console.log(email);
   if (email) {
     let data = "";
     let urlAux = currentURL.split("/login");
@@ -163,5 +163,11 @@ async function goToChangePass() {
       .catch((err) => {
         console.log("ERROR: ", err);
       });
+  } else {
+    await Swal.fire(
+      `Debes escribir un email en el campo de email!!!`,
+      "Escribe tu email para poder reestrablecer tu contraseña",
+      "info"
+    );
   }
 }

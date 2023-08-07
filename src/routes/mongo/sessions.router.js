@@ -55,6 +55,12 @@ router.get(
   sessionsController.logoutSession
 );
 
+router.put(
+  "/premium/:id",
+  politicaAutorizacion(["USUARIO", "PREMIUM"]),
+  sessionsController.changeRol
+);
+
 // // Middleware para manejar rutas no encontradas
 // router.use("*", (req, res) => {
 //   console.log("entron a una url que no existe..");

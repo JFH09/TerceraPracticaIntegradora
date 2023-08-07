@@ -2,6 +2,7 @@ import productModel from "../dao/models/product.model.js";
 import CustomErrors from "../utils/utils.errors/Custom.errors.js";
 import InfoErrors from "../utils/utils.errors/Info.errors.js";
 import EnumErrors from "../utils/utils.errors/Enum.errors.js";
+import userModel from "../dao/models/user.js";
 
 const getProducts = async (req, res) => {
   console.log(
@@ -38,7 +39,7 @@ const getProducts = async (req, res) => {
       { limit: limit, page: page, sort: { price: orden } }
       //{ limit: 1, page: 2 } el limite es para cant por pagina, y el page es que pagina va a mostrar...
     );
-    //console.log("Paginate:", products);
+    console.log("Paginate:", products);
     console.log("Se obtuvieron los productos!!");
     req.logger.info("Se obtuvieron los productos!!!");
     res.status(201).json(products);
@@ -55,11 +56,12 @@ const getProductById = async (req, res) => {
   console.log("Entro a obtener product by id", id);
   try {
     let producto = await productModel.findOne({ _id: id });
+    //.populate("products.product");
     console.log("producto...**********");
     console.log(producto);
-    if (producto != null) {
+    if (producto) {
       // console.log(" no es null");
-      req.logger.warning("el producto no existe!!!");
+      req.logger.warning("el producto existe!!!");
       res.json(producto);
     } else {
       // console.log("es null");
@@ -113,14 +115,30 @@ const addNewProduct = async (req, res) => {
     //console.log("no existe", productExist);
     req.logger.warning("el producto no existe!!!");
     try {
-      let result = await productModel.create({
-        title,
-        description,
-        price,
-        thumbnail,
-        code,
-        stock,
-      });
+      let user = req.session.user;
+      req.logger.warning(
+        "el usuario que esta agregando el producto es : ",
+        user.rol
+      );
+
+      let ownerInfo = "";
+      if (user.rol.toUpperCase() != "PREMIUM") {
+        console.log("El producto fue creado por un no premium");
+        ownerInfo = "ADMIN";
+      } else {
+        console.log("El producto fue creado por user premium");
+        ownerInfo = "PREMIUM " + user.id;
+      }
+      let productToAdd = {
+        title: title,
+        description: description,
+        price: price,
+        thumbnail: thumbnail,
+        code: code,
+        stock: stock,
+        owner: ownerInfo,
+      };
+      let result = await productModel.create(productToAdd);
       res.status(201).json({ result: "success", payload: result });
     } catch (err) {
       req.logger.warning("el producto no se pudo agregar!!!");
@@ -130,6 +148,7 @@ const addNewProduct = async (req, res) => {
 };
 
 const updateProductById = async (req, res) => {
+  console.log("entro a updateProductByid");
   let { id } = req.params;
 
   let productToReplace = req.body;
@@ -145,8 +164,24 @@ const updateProductById = async (req, res) => {
     return res.json({ result: "error", error: "Valores incompletos..." });
   }
 
-  let result = await productModel.updateOne({ _id: id }, productToReplace);
-  res.json({ status: "success", payload: result });
+  let user = req.session.user;
+  let productInfo = await productModel.findById({ _id: id });
+  let estado;
+  let result;
+  console.log("obteniendo usu para EDITAR prodct 172", user);
+  console.log("obteniendo producto para editar 174", productInfo);
+  let ownerProduct = productInfo.owner;
+  let owner = ownerProduct.split(" ");
+  if (user.id == owner[1] || user.rol.toUpperCase() == "ADMINISTRADOR") {
+    result = await productModel.updateOne({ _id: id }, productToReplace);
+    req.logger.info("se EDITO un  producto!!!");
+    estado = "success";
+  } else {
+    req.logger.info("No puede realizar esta accion!!!");
+    result = "No puede realizar esta accion ";
+    estado = "error";
+  }
+  res.json({ status: estado, payload: result });
 };
 
 const updateProductByIdUser = async (req, res) => {
@@ -168,14 +203,31 @@ const updateProductByIdUser = async (req, res) => {
 
   let result = await productModel.updateOne({ _id: id }, productToReplace);
   req.logger.info("se actualizo producto!!!");
+
   res.json({ status: "success", payload: result });
 };
 
 const deleteProductById = async (req, res) => {
   let { id } = req.params;
-  let result = await productModel.deleteOne({ _id: id });
-  req.logger.info("se elimino un  producto!!!");
-  res.json({ status: "success", payload: result });
+
+  let user = req.session.user;
+  let productInfo = await productModel.findById({ _id: id });
+  let estado;
+  let result;
+  console.log("obteniendo usu para eliminar prodct 200", user);
+  console.log("obteniendo producto para eliminar 200", productInfo);
+  let ownerProduct = productInfo.owner;
+  let owner = ownerProduct.split(" ");
+  if (user.id == owner[1] || user.rol.toUpperCase() == "ADMINISTRADOR") {
+    result = await productModel.deleteOne({ _id: id });
+    req.logger.info("se elimino un  producto!!!");
+    estado = "success";
+  } else {
+    req.logger.info("No puede realizar esta accion!!!");
+    result = "No puede realizar esta accion ";
+    estado = "error";
+  }
+  res.json({ status: estado, payload: result });
 };
 
 const getViewProducts = async (req, res) => {
